@@ -1,9 +1,6 @@
 package midiprinter
 
-import (
-	"fmt"
-	"strconv"
-)
+import "fmt"
 
 type PrinterConfig struct {
 	colWidths          []int
@@ -39,13 +36,4 @@ func NewPrinterConfig(colWidths []int, leftPad string, rightPad string, plane st
 		buildItemFormatString(colWidths, leftPad, rightPad, column, ""),
 		buildItemFormatString(colWidths, leftPad, rightPad, column, "-"),
 	}
-}
-
-func buildItemFormatString(colWidths []int, leftPad string, rightPad string, column string, justify string) string {
-
-	var s = column
-	for _, w := range colWidths {
-		s += leftPad + "%" + justify + strconv.Itoa(w) + "v" + rightPad + column
-	}
-	return s
 }
