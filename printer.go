@@ -1,8 +1,8 @@
 package midiprinter
 
 import (
-	"errors"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 )
@@ -17,17 +17,17 @@ func BuildSpacerRow(cfg *PrinterConfig) string {
 	return s
 }
 
-func BuildItemRow(cfg *PrinterConfig, a ...interface{}) (string, error) {
+func BuildItemRow(cfg *PrinterConfig, a ...interface{}) string {
 
 	return BuildItemRowJustified(cfg, "", a...)
 }
 
-func BuildItemRowJustified(cfg *PrinterConfig, justify string, a ...interface{}) (string, error) {
+func BuildItemRowJustified(cfg *PrinterConfig, justify string, a ...interface{}) string {
 
 	return buildItemRowExtended(cfg, false, justify, a...)
 }
 
-func buildItemRowExtended(cfg *PrinterConfig, extended bool, justify string, a ...interface{}) (string, error) {
+func buildItemRowExtended(cfg *PrinterConfig, extended bool, justify string, a ...interface{}) string {
 
 	// todo this is inefficient, move out somewhere
 	var f = buildItemFormatString(cfg.colWidths, cfg.leftPad, cfg.rightPad, cfg.column, justify)
@@ -36,11 +36,11 @@ func buildItemRowExtended(cfg *PrinterConfig, extended bool, justify string, a .
 	var toExtend = false
 
 	if len(cfg.colWidths) < len(a) {
-		return "", errors.New("more data columns than columns in configuration")
+		log.Fatal("more data columns than columns in configuration")
 	}
 
 	if len(cfg.colWidths) > len(a) {
-		for i := 0; i < len(cfg.colWidths) - len(a); i++ {
+		for i := 0; i < len(cfg.colWidths)-len(a); i++ {
 			a = append(a, "")
 		}
 	}
@@ -58,13 +58,9 @@ func buildItemRowExtended(cfg *PrinterConfig, extended bool, justify string, a .
 	}
 
 	if toExtend {
-		ext, err := buildItemRowExtended(cfg, true, "-", q...)
-		if err != nil {
-			return "", err
-		}
-		return fmt.Sprintf(f, a...) + "\n" + ext, nil
+		return fmt.Sprintf(f, a...) + "\n" + buildItemRowExtended(cfg, true, "-", q...)
 	} else {
-		return fmt.Sprintf(f, a...), nil
+		return fmt.Sprintf(f, a...)
 	}
 }
 

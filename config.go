@@ -3,12 +3,12 @@ package midiprinter
 import "fmt"
 
 type PrinterConfig struct {
-	colWidths          []int
-	leftPad            string
-	rightPad           string
-	plane              string
-	intersection       string
-	column             string
+	colWidths    []int
+	leftPad      string
+	rightPad     string
+	plane        string
+	intersection string
+	column       string
 }
 
 func (c *PrinterConfig) String() string {

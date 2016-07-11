@@ -1,11 +1,28 @@
 package midiprinter
 
-import "github.com/jstesta/gomidi/midi"
+import (
+	"github.com/jstesta/gomidi/midi"
+)
 
-// ByDeltaTime implements sort.Interface for []midi.Event based
-// on the DeltaTime field
-type ByDeltaTime []midi.Event
+type ByEvent []midi.Event
 
-func (t ByDeltaTime) Len() int           { return len(t) }
-func (t ByDeltaTime) Swap(i, j int)      { t[i], t[j] = t[j], t[i] }
-func (t ByDeltaTime) Less(i, j int) bool { return t[i].DeltaTime() < t[j].DeltaTime() }
+func (t ByEvent) Len() int      { return len(t) }
+func (t ByEvent) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
+func (t ByEvent) Less(i, j int) bool {
+
+	switch iType := t[i].(type) {
+	case *midi.MetaEvent:
+		if iType.MetaType() == midi.META_END_OF_TRACK {
+			return false
+		}
+	}
+
+	switch jType := t[j].(type) {
+	case *midi.MetaEvent:
+		if jType.MetaType() == midi.META_END_OF_TRACK {
+			return true
+		}
+	}
+
+	return t[i].DeltaTime() < t[j].DeltaTime()
+}
