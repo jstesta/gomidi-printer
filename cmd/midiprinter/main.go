@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -10,7 +11,8 @@ import (
 
 	"github.com/jstesta/gomidi"
 	"github.com/jstesta/gomidi/cfg"
-	"fmt"
+	"github.com/jstesta/gomidi/midi"
+	"sort"
 )
 
 var column = "|"
@@ -25,13 +27,6 @@ func main() {
 	)
 	flag.Parse()
 
-	f, err := os.Create("out.log")
-	if err != nil {
-		log.Fatal(err)
-	}
-	printerLogger := log.New(f, "", 0)
-	//printerLogger := log.New(os.Stdout, "", 0)
-
 	stdOutLogger := log.New(os.Stdout, "gomidi ", log.LUTC|log.LstdFlags)
 	stdOutLogger.Printf("midiFile: %v", *midiFile)
 
@@ -41,57 +36,92 @@ func main() {
 	if err != nil {
 		stdOutLogger.Fatal(err)
 	}
-	//stdOutLogger.Printf("midi: %v", m)
 
-	colWidths := [3]int{30, 30, 30}
+	f, err := os.Create("out.log")
+	if err != nil {
+		log.Fatal(err)
+	}
+	printerLogger := log.New(f, "", 0)
+	//printerLogger := log.New(os.Stdout, "", 0)
+	printMidi(m, printerLogger)
+}
+
+func printMidi(m *midi.Midi, logr *log.Logger) error {
+	colWidths := [4]int{30, 30, 30, 30}
 	cfg := midiprinter.NewPrinterConfig(colWidths[:], leftPad, rightPad, plane, intersection, column)
 
 	var headerSpacerRow = midiprinter.BuildHeaderSpacerRow(cfg)
-	printerLogger.Println(headerSpacerRow)
+	logr.Println(headerSpacerRow)
 
 	var header = midiprinter.BuildHeaderItemRow(cfg, "HEADER")
-	printerLogger.Println(header)
+	logr.Println(header)
 
 	var spacerRow = midiprinter.BuildSpacerRow(cfg)
-	printerLogger.Println(spacerRow)
+	logr.Println(spacerRow)
 
-	var itemRowHeader = midiprinter.BuildItemRowJustified(cfg,
+	itemRowHeader, err := midiprinter.BuildItemRowJustified(cfg,
 		"-",
 		"Division",
 		"Number of Tracks",
 		"Note")
-	printerLogger.Println(itemRowHeader)
-	printerLogger.Println(spacerRow)
+	if err != nil {
+		return err
+	}
+	logr.Println(itemRowHeader)
+	logr.Println(spacerRow)
 
-	var itemRow = midiprinter.BuildItemRow(cfg,
+	itemRow, err := midiprinter.BuildItemRow(cfg,
 		m.Division().Type(),
 		strconv.Itoa(m.NumberOfTracks()),
 		"")
-	printerLogger.Println(itemRow)
-	printerLogger.Println(spacerRow)
+	if err != nil {
+		return err
+	}
+	logr.Println(itemRow)
+	logr.Println(spacerRow)
 
 	for n, t := range m.Tracks() {
 		header = midiprinter.BuildHeader(
 			cfg,
-			fmt.Sprintf("TRACK #"+ strconv.Itoa(n+1)))
-		printerLogger.Println(header)
-		printerLogger.Println(spacerRow)
+			fmt.Sprintf("TRACK #"+strconv.Itoa(n+1)))
+		logr.Println(header)
+		logr.Println(spacerRow)
 
-		itemRowHeader =  midiprinter.BuildItemRowJustified(cfg,
+		itemRowHeader, err := midiprinter.BuildItemRowJustified(cfg,
 			"-",
 			"Delta Time",
 			"Length (bytes)",
 			"Data")
-		printerLogger.Println(itemRowHeader)
-		printerLogger.Println(spacerRow)
+		if err != nil {
+			return err
+		}
+		logr.Println(itemRowHeader)
+		logr.Println(spacerRow)
 
-		for _, e := range t.Events() {
-			itemRow = midiprinter.BuildItemRow(cfg,
+		events := t.Events()
+		sort.Sort(midiprinter.ByDeltaTime(events))
+
+		for _, e := range events {
+
+			var dataFormat string
+			switch e.(type) {
+			default:
+				dataFormat = "%X"
+			case *midi.MetaEvent:
+				dataFormat = "%s"
+			}
+
+			itemRow, err := midiprinter.BuildItemRow(cfg,
 				e.DeltaTime(),
 				e.Length(),
-				fmt.Sprintf("%X", e.Data()))
-			printerLogger.Println(itemRow)
+				fmt.Sprintf(dataFormat, e.Data()))
+			if err != nil {
+				return err
+			}
+			logr.Println(itemRow)
 		}
-		printerLogger.Println(spacerRow)
+		logr.Println(spacerRow)
 	}
+
+	return nil
 }

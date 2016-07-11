@@ -1,9 +1,10 @@
 package midiprinter
 
 import (
+	"errors"
 	"fmt"
-	"strings"
 	"strconv"
+	"strings"
 )
 
 func BuildSpacerRow(cfg *PrinterConfig) string {
@@ -16,23 +17,33 @@ func BuildSpacerRow(cfg *PrinterConfig) string {
 	return s
 }
 
-func BuildItemRow(cfg *PrinterConfig, a ...interface{}) string {
+func BuildItemRow(cfg *PrinterConfig, a ...interface{}) (string, error) {
 
 	return BuildItemRowJustified(cfg, "", a...)
 }
 
-func BuildItemRowJustified(cfg *PrinterConfig, justify string, a ...interface{}) string {
+func BuildItemRowJustified(cfg *PrinterConfig, justify string, a ...interface{}) (string, error) {
 
 	return buildItemRowExtended(cfg, false, justify, a...)
 }
 
-func buildItemRowExtended(cfg *PrinterConfig, extended bool, justify string,  a ...interface{}) string {
+func buildItemRowExtended(cfg *PrinterConfig, extended bool, justify string, a ...interface{}) (string, error) {
 
 	// todo this is inefficient, move out somewhere
 	var f = buildItemFormatString(cfg.colWidths, cfg.leftPad, cfg.rightPad, cfg.column, justify)
 
 	var q = make([]interface{}, len(cfg.colWidths))
 	var toExtend = false
+
+	if len(cfg.colWidths) < len(a) {
+		return "", errors.New("more data columns than columns in configuration")
+	}
+
+	if len(cfg.colWidths) > len(a) {
+		for i := 0; i < len(cfg.colWidths - len(a)); i++ {
+			a = append(a, "")
+		}
+	}
 
 	for idx, i := range a {
 		var s = fmt.Sprintf("%v", i)
@@ -46,15 +57,14 @@ func buildItemRowExtended(cfg *PrinterConfig, extended bool, justify string,  a 
 		}
 	}
 
-	//if extended {
-	//	f = buildItemFormatString(cfg.colWidths, cfg.leftPad, cfg.rightPad, cfg.column, "-")
-	//}
-
 	if toExtend {
-		return fmt.Sprintf(f, a...) + "\n" +
-			buildItemRowExtended(cfg, true, "-", q...)
+		ext, err := buildItemRowExtended(cfg, true, "-", q...)
+		if err != nil {
+			return "", err
+		}
+		return fmt.Sprintf(f, a...) + "\n" + ext, nil
 	} else {
-		return fmt.Sprintf(f, a...)
+		return fmt.Sprintf(f, a...), nil
 	}
 }
 
@@ -79,7 +89,7 @@ func BuildHeaderSpacerRow(cfg *PrinterConfig) string {
 	for _, w := range cfg.colWidths {
 		s += strings.Repeat(cfg.plane, w+len(cfg.leftPad)+len(cfg.rightPad))
 	}
-	s += strings.Repeat(cfg.plane, (len(cfg.colWidths)-1) * len(cfg.column))
+	s += strings.Repeat(cfg.plane, (len(cfg.colWidths)-1)*len(cfg.column))
 	s += cfg.intersection
 	return s
 }
@@ -88,12 +98,14 @@ func BuildHeaderItemRow(cfg *PrinterConfig, text string) string {
 
 	var n int
 	for _, w := range cfg.colWidths {
-		n += w + len(cfg.leftPad) + len(cfg.rightPad)
+		n += w
 	}
+	n += (len(cfg.colWidths) - 1) * (len(cfg.leftPad) + len(cfg.rightPad))
+	n += (len(cfg.colWidths) - 1) * len(cfg.column)
 
 	var textPart = text
 	var remaining string
-	if (len(text) > n) {
+	if len(text) > n {
 		textPart = text[:n]
 		remaining = text[n:]
 	}
@@ -104,7 +116,7 @@ func BuildHeaderItemRow(cfg *PrinterConfig, text string) string {
 	s += cfg.rightPad
 	s += cfg.column
 
-	if (len(remaining) > 0) {
+	if len(remaining) > 0 {
 		s += "\n" + BuildHeaderItemRow(cfg, remaining)
 	}
 
