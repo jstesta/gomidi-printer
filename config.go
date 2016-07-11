@@ -9,8 +9,6 @@ type PrinterConfig struct {
 	plane              string
 	intersection       string
 	column             string
-	itemFormat         string
-	extendedItemFormat string
 }
 
 func (c *PrinterConfig) String() string {
@@ -33,7 +31,5 @@ func NewPrinterConfig(colWidths []int, leftPad string, rightPad string, plane st
 		plane,
 		intersection,
 		column,
-		buildItemFormatString(colWidths, leftPad, rightPad, column, ""),
-		buildItemFormatString(colWidths, leftPad, rightPad, column, "-"),
 	}
 }

@@ -40,7 +40,7 @@ func buildItemRowExtended(cfg *PrinterConfig, extended bool, justify string, a .
 	}
 
 	if len(cfg.colWidths) > len(a) {
-		for i := 0; i < len(cfg.colWidths - len(a)); i++ {
+		for i := 0; i < len(cfg.colWidths) - len(a); i++ {
 			a = append(a, "")
 		}
 	}
