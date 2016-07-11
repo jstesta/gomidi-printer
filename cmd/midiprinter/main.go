@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sort"
 	"strconv"
 
 	"sam/midiprinter"
@@ -12,7 +13,6 @@ import (
 	"github.com/jstesta/gomidi"
 	"github.com/jstesta/gomidi/cfg"
 	"github.com/jstesta/gomidi/midi"
-	"sort"
 )
 
 var column = "|"
