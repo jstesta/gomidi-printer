@@ -1,8 +1,6 @@
 package midiprinter
 
-import (
-	"github.com/jstesta/gomidi/midi"
-)
+import "github.com/jstesta/gomidi/midi"
 
 type ByEvent []midi.Event
 
