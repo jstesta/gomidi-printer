@@ -35,16 +35,21 @@ func buildItemRowExtended(cfg *PrinterConfig, extended bool, justify string, a .
 	var q = make([]interface{}, len(cfg.colWidths))
 	var toExtend = false
 
+	// it is an error if there is more data than columns
 	if len(cfg.colWidths) < len(a) {
 		log.Fatal("more data columns than columns in configuration")
 	}
 
+	// add empty data if there are more columns than data
 	if len(cfg.colWidths) > len(a) {
-		for i := 0; i < len(cfg.colWidths)-len(a); i++ {
+		rem := len(cfg.colWidths) - len(a)
+		for i := 0; i < rem; i++ {
 			a = append(a, "")
 		}
 	}
 
+	// check string length.  if it doesn't fit in the column, extend the
+	// value to a new row
 	for idx, i := range a {
 		var s = fmt.Sprintf("%v", i)
 

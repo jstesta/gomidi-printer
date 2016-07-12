@@ -10,6 +10,8 @@ func (t ByEvent) Less(i, j int) bool {
 
 	iIsMeta := false
 	jIsMeta := false
+	var iStatus byte = 0
+	var jStatus byte = 0
 
 	switch iType := t[i].(type) {
 	case *midi.MetaEvent:
@@ -17,6 +19,7 @@ func (t ByEvent) Less(i, j int) bool {
 			return false
 		}
 		iIsMeta = true
+		iStatus = iType.MetaType()
 	}
 
 	switch jType := t[j].(type) {
@@ -25,11 +28,16 @@ func (t ByEvent) Less(i, j int) bool {
 			return true
 		}
 		jIsMeta = true
+		jStatus = jType.MetaType()
 	}
 
 	if (t[i].DeltaTime() == t[j].DeltaTime()) {
 		if (iIsMeta && !jIsMeta) {
 			return true
+		}
+
+		if (iIsMeta && jIsMeta) {
+			return iStatus < jStatus
 		}
 	}
 

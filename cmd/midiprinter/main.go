@@ -68,8 +68,7 @@ func printMidi(m *midi.Midi, logr *log.Logger) error {
 
 	itemRow := midiprinter.BuildItemRow(cfg,
 		m.Division().Type(),
-		strconv.Itoa(m.NumberOfTracks()),
-		"")
+		strconv.Itoa(m.NumberOfTracks()))
 	logr.Println(itemRow)
 	logr.Println(spacerRow)
 
