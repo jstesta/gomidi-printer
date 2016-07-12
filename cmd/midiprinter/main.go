@@ -47,7 +47,7 @@ func main() {
 }
 
 func printMidi(m *midi.Midi, logr *log.Logger) error {
-	colWidths := [4]int{30, 30, 30, 30}
+	colWidths := []int{30, 30, 30, 30, 15}
 	cfg := midiprinter.NewPrinterConfig(colWidths[:], leftPad, rightPad, plane, intersection, column)
 
 	var headerSpacerRow = midiprinter.BuildHeaderSpacerRow(cfg)
@@ -85,7 +85,8 @@ func printMidi(m *midi.Midi, logr *log.Logger) error {
 			"Delta Time",
 			"Type",
 			"Data",
-			"Note")
+			"Note",
+			"Status")
 		logr.Println(itemRowHeader)
 		logr.Println(spacerRow)
 
@@ -97,13 +98,16 @@ func printMidi(m *midi.Midi, logr *log.Logger) error {
 			dataFormat := "%X"
 			eventType := "default"
 			note := ""
+			var status byte
 			switch t := e.(type) {
 			case *midi.MidiEvent:
 				eventType = "Midi Event"
 				note = midiTypeNote(t.Status())
+				status = t.Status()
 			case *midi.SysexEvent:
 				eventType = "Sysex Event"
 				note = sysexTypeNote(t.Status())
+				status = t.Status()
 			case *midi.MetaEvent:
 				eventType = "Meta Event"
 				switch t.MetaType() {
@@ -117,13 +121,15 @@ func printMidi(m *midi.Midi, logr *log.Logger) error {
 					dataFormat = "%s"
 				}
 				note = metaTypeNote(t.MetaType())
+				status = t.MetaType()
 			}
 
 			itemRow := midiprinter.BuildItemRow(cfg,
 				e.DeltaTime(),
 				eventType,
 				fmt.Sprintf(dataFormat, e.Data()),
-				note)
+				note,
+				fmt.Sprintf("%X", status))
 			logr.Println(itemRow)
 		}
 		logr.Println(spacerRow)
@@ -133,98 +139,25 @@ func printMidi(m *midi.Midi, logr *log.Logger) error {
 }
 
 func metaTypeNote(b byte) string {
-	switch b {
-	default:
-		return "default"
-	case midi.META_SEQUENCE_NUMBER:
-		return "Sequence Number"
-	case midi.META_TEXT_EVENT:
-		return "Text Event"
-	case midi.META_COPYRIGHT_NOTICE:
-		return "Copyright Notice"
-	case midi.META_SEQUENCE_NAME:
-		return "Sequence Name"
-	case midi.META_INSTRUMENT_NAME:
-		return "Instrument Name"
-	case midi.META_LYRIC:
-		return "Lyric"
-	case midi.META_MARKER:
-		return "Marker"
-	case midi.META_CUE_POINT:
-		return "Cue Point"
-	case midi.META_MIDI_CHANNEL_PREFIX:
-		return "MIDI Channel Prefix"
-	case midi.META_END_OF_TRACK:
-		return "End Of Track"
-	case midi.META_SET_TEMPO:
-		return "Set Tempo"
-	case midi.META_SMPTE_OFFSET:
-		return "SMPTE Offset"
-	case midi.META_TIME_SIGNATURE:
-		return "Time Signature"
-	case midi.META_KEY_SIGNATURE:
-		return "Key Signature"
-	case midi.META_SEQUENCER_SPECIFIC:
-		return "Sequencer Specific"
+
+	if elem, ok := midiprinter.META_STATUS_STRING[b]; ok {
+		return elem
 	}
+	return "default"
 }
 
 func midiTypeNote(b byte) string {
-	switch (b & 0xF0) >> 4 {
-	default:
-		return "default"
-	case midi.MIDI_NOTE_OFF:
-		return "Note OFF"
-	case midi.MIDI_NOTE_ON:
-		return "Note ON"
-	case midi.MIDI_POLYPHONIC_KEY_PRESSURE:
-		return "Polyphonic Key Pressure"
-	case midi.MIDI_CONTROL_CHANGE:
-		return "Control Change"
-	case midi.MIDI_PROGRAM_CHANGE:
-		return "Program Change"
-	case midi.MIDI_CHANNEL_PRESSURE:
-		return "Channel Pressure"
-	case midi.MIDI_PITCH_WHEEL_CHANGE:
-		return "Pitch Wheel Change"
+
+	if elem, ok := midiprinter.MIDI_STATUS_STRING[(b&0xF0)>>4]; ok {
+		return elem
 	}
+	return "default"
 }
 
 func sysexTypeNote(b byte) string {
-	switch b {
-	default:
-		return "default"
-	case midi.SYSEX_SYSTEM_EXCLUSIVE:
-		return "System Exclusive"
-	case midi.SYSEX_UNDEFINED_1:
-		return "Undefined (1)"
-	case midi.SYSEX_SONG_POSITION_POINTER:
-		return "Song Position Pointer"
-	case midi.SYSEX_SONG_SELECT:
-		return "Song Select"
-	case midi.SYSEX_UNDEFINED_4:
-		return "Undefined (4)"
-	case midi.SYSEX_UNDEFINED_5:
-		return "Undefined (5)"
-	case midi.SYSEX_TUNE_REQUEST:
-		return "Tune Request"
-	case midi.SYSEX_END_OF_EXCLUSIVE:
-		return "End Of Exclusive"
-	case midi.SYSEX_TIMING_CLOCK:
-		return "Timing Clock"
-	case midi.SYSEX_UNDEFINED_9:
-		return "Undefined (9)"
-	case midi.SYSEX_START:
-		return "Start"
-	case midi.SYSEX_CONTINUE:
-		return "Continue"
-	case midi.SYSEX_STOP:
-		return "Stop"
-	case midi.SYSEX_UNDEFINED_13:
-		return "Undefined (13)"
-	case midi.SYSEX_ACTIVE_SENSING:
-		return "Active Sensing"
-	case midi.SYSEX_RESET:
-		return "Reset"
+
+	if elem, ok := midiprinter.SYSEX_STATUS_STRING[b]; ok {
+		return elem
 	}
+	return "default"
 }
