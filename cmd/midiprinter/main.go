@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"sort"
+
 	"strconv"
 
 	"sam/midiprinter"
@@ -15,6 +15,7 @@ import (
 	"github.com/jstesta/gomidi/midi"
 )
 
+var colWidths = []int{10, 25, 20, 100}
 var column = "|"
 var plane = "-"
 var intersection = "+"
@@ -47,7 +48,7 @@ func main() {
 }
 
 func printMidi(m *midi.Midi, logr *log.Logger) error {
-	colWidths := []int{30, 30, 30, 30, 15}
+
 	cfg := midiprinter.NewPrinterConfig(colWidths[:], leftPad, rightPad, plane, intersection, column)
 
 	var headerSpacerRow = midiprinter.BuildHeaderSpacerRow(cfg)
@@ -61,13 +62,28 @@ func printMidi(m *midi.Midi, logr *log.Logger) error {
 
 	itemRowHeader := midiprinter.BuildItemRowJustified(cfg,
 		"-",
+		"Format",
 		"Division",
-		"Number of Tracks")
+		"Tracks")
 	logr.Println(itemRowHeader)
 	logr.Println(spacerRow)
 
+	var divisionNote string
+	switch division := m.Division().(type) {
+	default:
+		divisionNote = "default"
+	case *midi.MetricalDivision:
+		divisionNote = fmt.Sprintf("Metrical Division [%v]",
+			division.Resolution())
+	case *midi.TimeCodeBasedDivision:
+		divisionNote = fmt.Sprintf("Time-code Based [Format: %v, Resolution: %v]",
+			division.Format(),
+			division.Resolution())
+	}
+
 	itemRow := midiprinter.BuildItemRow(cfg,
-		m.Division().Type(),
+		m.Header().Format(),
+		divisionNote,
 		strconv.Itoa(m.NumberOfTracks()))
 	logr.Println(itemRow)
 	logr.Println(spacerRow)
@@ -83,52 +99,38 @@ func printMidi(m *midi.Midi, logr *log.Logger) error {
 			"-",
 			"Delta Time",
 			"Type",
-			"Data",
-			"Note",
-			"Status")
+			"Description",
+			"Data")
 		logr.Println(itemRowHeader)
 		logr.Println(spacerRow)
 
 		events := t.Events()
-		sort.Sort(midiprinter.ByEvent(events))
 
 		for _, e := range events {
 
-			dataFormat := "%X"
+			data := ""
 			eventType := "default"
 			note := ""
-			var status byte
 			switch t := e.(type) {
 			case *midi.MidiEvent:
 				eventType = "Midi Event"
 				note = midiTypeNote(t.Status())
-				status = t.Status()
+				data = fmt.Sprintf("%X", t.Data())
 			case *midi.SysexEvent:
 				eventType = "Sysex Event"
 				note = sysexTypeNote(t.Status())
-				status = t.Status()
+				data = fmt.Sprintf("%X", t.Data())
 			case *midi.MetaEvent:
 				eventType = "Meta Event"
-				switch t.MetaType() {
-				case midi.META_TEXT_EVENT,
-					midi.META_COPYRIGHT_NOTICE,
-					midi.META_SEQUENCE_NAME,
-					midi.META_INSTRUMENT_NAME,
-					midi.META_LYRIC,
-					midi.META_MARKER,
-					midi.META_CUE_POINT:
-					dataFormat = "%s"
-				}
+				data = midiprinter.ParseMetaEventData(t)
 				note = metaTypeNote(t.MetaType())
-				status = t.MetaType()
 			}
 
 			itemRow := midiprinter.BuildItemRow(cfg,
 				e.DeltaTime(),
 				eventType,
-				fmt.Sprintf(dataFormat, e.Data()),
 				note,
-				fmt.Sprintf("%X", status))
+				data)
 			logr.Println(itemRow)
 		}
 		logr.Println(spacerRow)

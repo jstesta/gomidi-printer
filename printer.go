@@ -53,14 +53,19 @@ func buildItemRowExtended(cfg *PrinterConfig, extended bool, justify string, a .
 	for idx, i := range a {
 		var s = fmt.Sprintf("%v", i)
 
-		if len(s) > cfg.colWidths[idx] {
+		if nlIdx := strings.Index(s, "\n"); nlIdx != -1 {
+			if nlIdx < cfg.colWidths[idx] {
+				a[idx] = s[:nlIdx]
+				q[idx] = s[nlIdx+1:]
+				toExtend = true
+			} else if len(s) > cfg.colWidths[idx] {
+				a[idx] = s[:cfg.colWidths[idx]]
+				q[idx] = s[cfg.colWidths[idx]:]
+				toExtend = true
+			}
+		} else if len(s) > cfg.colWidths[idx] {
 			a[idx] = s[:cfg.colWidths[idx]]
 			q[idx] = s[cfg.colWidths[idx]:]
-			toExtend = true
-		} else if nlIdx := strings.Index(s, "\n"); nlIdx != -1 {
-			// contains newline
-			a[idx] = s[:nlIdx]
-			q[idx] = s[nlIdx+1:]
 			toExtend = true
 		} else {
 			q[idx] = ""
@@ -68,7 +73,7 @@ func buildItemRowExtended(cfg *PrinterConfig, extended bool, justify string, a .
 	}
 
 	if toExtend {
-		return fmt.Sprintf(f, a...) + "\n" + buildItemRowExtended(cfg, true, "-", q...)
+		return fmt.Sprintf(f, a...) + "\n" + buildItemRowExtended(cfg, true, "", q...)
 	} else {
 		return fmt.Sprintf(f, a...)
 	}
