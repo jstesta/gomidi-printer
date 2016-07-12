@@ -1,8 +1,6 @@
 package midiprinter
 
 import (
-	"bytes"
-	"encoding/binary"
 	"fmt"
 	"github.com/jstesta/gomidi/midi"
 	"math"
@@ -19,13 +17,16 @@ func ParseMetaEventData(e *midi.MetaEvent) string {
 		midi.META_INSTRUMENT_NAME,
 		midi.META_LYRIC,
 		midi.META_MARKER,
-		midi.META_CUE_POINT:
+		midi.META_CUE_POINT,
+		midi.META_PROGRAM_NAME,
+		midi.META_DEVICE_NAME:
 		return fmt.Sprintf("%s", data)
 
 	case midi.META_SEQUENCE_NUMBER:
-	case midi.META_PROGRAM_NAME:
-	case midi.META_DEVICE_NAME:
+		return fmt.Sprintf("Sequence Number: %v",
+			int32(data[0])<<8 | int32(data[1]))
 	case midi.META_MIDI_CHANNEL_PREFIX:
+		return fmt.Sprintf("Midi Channel Prefix: %v", data[0])
 	case midi.META_MIDI_PORT:
 		return fmt.Sprintf("Midi Port: %v", data[0])
 	case midi.META_END_OF_TRACK:
@@ -81,37 +82,3 @@ func ParseMetaEventData(e *midi.MetaEvent) string {
 	return fmt.Sprintf("%X", data)
 }
 
-func ToBitString(t interface{}) (s string) {
-
-	switch t := t.(type) {
-
-	case byte:
-		for i := 0; i < 8; i++ {
-			s = fmt.Sprintf("%d", t&1) + s
-			t >>= 1
-		}
-		return
-
-	case int32, uint32:
-		buf := new(bytes.Buffer)
-		err := binary.Write(buf, binary.LittleEndian, t)
-		if err != nil {
-			fmt.Println(err)
-			return ""
-		}
-
-		for _, b := range buf.Bytes() {
-			s = ToBitString(b) + s
-		}
-		return
-
-	case int:
-		return ToBitString(int32(t))
-
-	case uint:
-		return ToBitString(uint32(t))
-
-	default:
-		return ""
-	}
-}
