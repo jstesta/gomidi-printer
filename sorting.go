@@ -15,6 +15,8 @@ func (t ByEvent) Less(i, j int) bool {
 
 	switch iType := t[i].(type) {
 	case *midi.MetaEvent:
+		// end of track meta event is always last ("greater" than
+		// all other events)
 		if iType.MetaType() == midi.META_END_OF_TRACK {
 			return false
 		}
@@ -24,6 +26,8 @@ func (t ByEvent) Less(i, j int) bool {
 
 	switch jType := t[j].(type) {
 	case *midi.MetaEvent:
+		// end of track meta event is always last ("greater" than
+		// all other events)
 		if jType.MetaType() == midi.META_END_OF_TRACK {
 			return true
 		}
@@ -31,15 +35,19 @@ func (t ByEvent) Less(i, j int) bool {
 		jStatus = jType.MetaType()
 	}
 
-	if (t[i].DeltaTime() == t[j].DeltaTime()) {
-		if (iIsMeta && !jIsMeta) {
+	// for events with the same delta time
+	if t[i].DeltaTime() == t[j].DeltaTime() {
+		// meta events come first
+		if iIsMeta && !jIsMeta {
 			return true
 		}
 
-		if (iIsMeta && jIsMeta) {
+		// if both are meta events, order by status
+		if iIsMeta && jIsMeta {
 			return iStatus < jStatus
 		}
 	}
 
+	// everything else is ordered by delta time
 	return t[i].DeltaTime() < t[j].DeltaTime()
 }
