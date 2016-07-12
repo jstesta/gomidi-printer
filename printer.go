@@ -57,6 +57,11 @@ func buildItemRowExtended(cfg *PrinterConfig, extended bool, justify string, a .
 			a[idx] = s[:cfg.colWidths[idx]]
 			q[idx] = s[cfg.colWidths[idx]:]
 			toExtend = true
+		} else if nlIdx := strings.Index(s, "\n"); nlIdx != -1 {
+			// contains newline
+			a[idx] = s[:nlIdx]
+			q[idx] = s[nlIdx+1:]
+			toExtend = true
 		} else {
 			q[idx] = ""
 		}
