@@ -8,11 +8,10 @@ import (
 
 	"strconv"
 
-	"sam/midiprinter"
-
 	"github.com/jstesta/gomidi"
 	"github.com/jstesta/gomidi/cfg"
 	"github.com/jstesta/gomidi/midi"
+	"github.com/jstesta/gomidi-printer"
 )
 
 var colWidths = []int{10, 25, 20, 100}
