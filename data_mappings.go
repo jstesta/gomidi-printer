@@ -24,7 +24,7 @@ func ParseMetaEventData(e *midi.MetaEvent) string {
 
 	case midi.META_SEQUENCE_NUMBER:
 		return fmt.Sprintf("Sequence Number: %v",
-			int32(data[0])<<8 | int32(data[1]))
+			int32(data[0])<<8|int32(data[1]))
 	case midi.META_MIDI_CHANNEL_PREFIX:
 		return fmt.Sprintf("Midi Channel Prefix: %v", data[0])
 	case midi.META_MIDI_PORT:
@@ -39,7 +39,7 @@ func ParseMetaEventData(e *midi.MetaEvent) string {
 	case midi.META_SMPTE_OFFSET:
 	case midi.META_TIME_SIGNATURE:
 		// 4 bytes representing time signature
-		return fmt.Sprintf("Time Signature: %v/%v\nClocks per qtr-note: %v\n32nd-notes per qtr-note: %v",
+		return fmt.Sprintf("Time Signature: %v/%v  Clocks per qtr-note: %v  32nd-notes per qtr-note: %v",
 			data[0],
 			math.Pow(2, float64(data[1])),
 			data[2],
@@ -82,3 +82,50 @@ func ParseMetaEventData(e *midi.MetaEvent) string {
 	return fmt.Sprintf("%X", data)
 }
 
+func ParseMidiEventData(e *midi.MidiEvent) string {
+
+	data := e.Data()
+	channel := e.Status() & 0x0F
+
+	switch e.Status() >> 4 {
+	case midi.MIDI_NOTE_OFF,
+		midi.MIDI_NOTE_ON:
+		note := parseNote(data[0])
+		velocity := data[1]
+		return fmt.Sprintf("Channel: %v  %v @%-3v",
+			channel,
+			note,
+			velocity)
+	case midi.MIDI_POLYPHONIC_KEY_PRESSURE:
+	case midi.MIDI_CONTROL_CHANGE:
+	case midi.MIDI_PROGRAM_CHANGE:
+	case midi.MIDI_CHANNEL_PRESSURE:
+	case midi.MIDI_PITCH_WHEEL_CHANGE:
+	}
+
+	return fmt.Sprintf("%X", data)
+}
+
+func parseNote(b byte) string {
+	octave := (b / 11) - 2
+	note := noteMapping[b%12]
+	return fmt.Sprintf("Octave #%v %-2v",
+		octave,
+		note)
+}
+
+var noteMapping map[byte]string = map[byte]string{
+	0:  "C",
+	1:  "C#",
+	2:  "D",
+	3:  "D#",
+	4:  "E",
+	5:  "E#",
+	6:  "F",
+	7:  "F#",
+	8:  "G",
+	9:  "G#",
+	10: "A",
+	11: "A#",
+	12: "B",
+}

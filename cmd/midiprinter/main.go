@@ -115,7 +115,7 @@ func printMidi(m *midi.Midi, logr *log.Logger) error {
 			case *midi.MidiEvent:
 				eventType = "Midi Event"
 				note = midiTypeNote(t.Status())
-				data = fmt.Sprintf("%X", t.Data())
+				data = midiprinter.ParseMidiEventData(t)
 			case *midi.SysexEvent:
 				eventType = "Sysex Event"
 				note = sysexTypeNote(t.Status())
